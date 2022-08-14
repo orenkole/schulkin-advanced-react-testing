@@ -107,6 +107,8 @@ describe("Common to all flows", () => {
 
 ## Mocking with `.provide()` method
 
+We'll mock the server call  
+
 We'll mock with Provide  
 We have 2 syntaxes: 
 - static: array of tuples [matcher, mock value]
@@ -130,6 +132,49 @@ describe("Common to all flows", () => {
   test("starts with hold call to server", () => {
     return expectSaga(ticketFlow, holdAction)
       .provide([[matchers.call.fn(reserveTicketServerCall), null]])
+      .call(reserveTicketServerCall, holdReservation)
+      .run();
+  });
+});
+```
+
+## Dispatching Actions with `.dispatch()` method
+
+Effect _take_ needs an action to move forward  
+```js
+      .dispatch(
+        startTicketAbort({
+          reservation: holdReservation,
+          reason: "Abort! Abort!",
+        })
+      )
+```
+
+If we abort, we want to call _releaseServerCall_
+![img.png](img.png)
+---
+![img_1.png](img_1.png)
+---
+
+```js
+        [matchers.call.fn(releaseServerCall), null],
+```
+
+_base-app/client/src/features/tickets/redux/ticketSaga.test.ts_
+```js
+describe("Common to all flows", () => {
+  test("starts with hold call to server", () => {
+    return expectSaga(ticketFlow, holdAction)
+      .provide([
+        [matchers.call.fn(reserveTicketServerCall), null],
+        [matchers.call.fn(releaseServerCall), null],
+      ])
+      .dispatch(
+        startTicketAbort({
+          reservation: holdReservation,
+          reason: "Abort! Abort!",
+        })
+      )
       .call(reserveTicketServerCall, holdReservation)
       .run();
   });
