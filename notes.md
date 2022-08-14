@@ -44,4 +44,35 @@ test("saga calls analytics when it receives error toast", () => {
   .call(sendToAnalytics, errorToastOptions.title)
 ```
 
+## Code Quiz! Non-Error Toast
+
+```js
+const infoToastOptions: ToastOptions = {
+  title: "It's not time to panic",
+  status: "info",
+};
+
+const infoToastAction = {
+  type: "test",
+  payload: infoToastOptions,
+};
+
+test("saga does not call analytics when it receives info toast", () => {
+  return expectSaga(logErrorToasts, infoToastAction)
+    .not.call(sendToAnalytics, infoToastOptions.title)
+    .run();
+});
+```
+
+## Partial assertion
+
+https://redux-saga-test-plan.jeremyfairbank.com/integration-testing/partial-matching.html  
+We assert that we only call function regardless of args:
+```js
+test("saga does not call analytics when it receives info toast", () => {
+  return expectSaga(logErrorToasts, infoToastAction)
+    .not.call.fn(sendToAnalytics)
+    .run();
+});
+```
 
