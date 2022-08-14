@@ -84,3 +84,54 @@ test("saga does not call analytics when it receives info toast", () => {
 ![img.png](images-notes/ticketFlow-saga.png)
 
 ## Set up ticketFlow Saga Test File
+
+## Error from not Returning `expectSaga`
+
+```js
+const holdAction = {
+  type: "test",
+  payload: holdReservation,
+};
+
+describe("Common to all flows", () => {
+  test("starts with hold call to server", () => {
+    return expectSaga(ticketFlow, holdAction)
+      .call(reserveTicketServerCall, holdReservation)
+      .run();
+  });
+});
+```
+
+`npm test`  
+` Error: Cross origin http://localhost forbidden`  
+
+## Mocking with `.provide()` method
+
+We'll mock with Provide  
+We have 2 syntaxes: 
+- static: array of tuples [matcher, mock value]
+- dynamic: object literal { matcher: (effect, next) => {} }
+
+We'll be using mostly static.
+Dynamic _race_ isn't available for static  
+
+https://redux-saga-test-plan.jeremyfairbank.com/integration-testing/mocking/static-providers.html  
+
+_base-app/client/src/features/tickets/redux/ticketSaga.ts_
+```js
+import * as matchers from "redux-saga-test-plan/matchers"
+
+const holdAction = {
+  type: "test",
+  payload: holdReservation,
+};
+
+describe("Common to all flows", () => {
+  test("starts with hold call to server", () => {
+    return expectSaga(ticketFlow, holdAction)
+      .provide([[matchers.call.fn(reserveTicketServerCall), null]])
+      .call(reserveTicketServerCall, holdReservation)
+      .run();
+  });
+});
+```
