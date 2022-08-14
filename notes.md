@@ -5,3 +5,43 @@
 ![img.png](images-notes/rstp-1.png)
 
 Some tests are not possible in form of integration test
+
+## First saga test
+
+`npm i -D redux-saga-test-plan`  
+
+_base-app/client/src/features/toast/redux/LogErrorToastSaga.ts_
+```js
+export function* watchToasts(): SagaIterator {
+  yield takeEvery(showToast.type, logErrorToasts);
+}
+```
+
+here we need to pass action ourselves instead of _takeEvery_  
+
+_base-app/client/src/features/toast/redux/logErrorToastSaga.test.ts_
+```js
+const errorToastOptions: ToastOptions = {
+  title: "It's time to panic",
+  status: "error",
+};
+
+const errorToastAction = {
+  type: "test",
+  payload: errorToastOptions,
+};
+
+test("saga calls analytics when it receives error toast", () => {
+  return expectSaga(logErrorToasts, errorToastAction)
+    .call(sendToAnalytics, errorToastOptions.title)
+    .run();
+});
+```
+
+- we have to use _return_ because _expectSaga_ is async
+- as a result we expect to be called:
+```js
+  .call(sendToAnalytics, errorToastOptions.title)
+```
+
+
