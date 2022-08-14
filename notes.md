@@ -76,3 +76,11 @@ test("saga does not call analytics when it receives info toast", () => {
 });
 ```
 
+
+# Section 3: testing complex saga that uses 'takeEvery'
+
+## Introduction to ticketFlow saga
+
+![img.png](images-notes/ticketFlow-saga.png)
+
+## Set up ticketFlow Saga Test File
