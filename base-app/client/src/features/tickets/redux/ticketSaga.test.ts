@@ -1,50 +1,13 @@
-import { PayloadAction } from "@reduxjs/toolkit";
-import axios, { CancelTokenSource } from "axios";
-import { SagaIterator } from "redux-saga";
-import {
-  call,
-  cancel,
-  cancelled,
-  put,
-  race,
-  select,
-  take,
-  takeEvery,
-} from "redux-saga/effects";
 import { expectSaga } from "redux-saga-test-plan";
 import * as matchers from "redux-saga-test-plan/matchers";
+import { throwError } from "redux-saga-test-plan/providers";
 
-import { HoldReservation } from "../../../../../shared/types";
-import {
-  holdReservation,
-  purchasePayload,
-  purchaseReservation,
-} from "../../../test-utils/fake-data";
+import { holdReservation } from "../../../test-utils/fake-data";
 import { showToast } from "../../toast/redux/toastSlice";
-import { ToastOptions } from "../../toast/types";
-import {
-  cancelPurchaseServerCall,
-  releaseServerCall,
-  reserveTicketServerCall,
-} from "../api";
+import { releaseServerCall, reserveTicketServerCall } from "../api";
 import { TicketAction } from "../types";
-import {
-  cancelTransaction,
-  generateErrorToastOptions,
-  purchaseTickets,
-  ticketFlow,
-} from "./ticketSaga";
-import {
-  endTransaction,
-  holdTickets,
-  PurchasePayload,
-  ReleasePayload,
-  resetTransaction,
-  selectors,
-  startTicketAbort,
-  startTicketPurchase,
-  startTicketRelease,
-} from "./ticketSlice";
+import { generateErrorToastOptions, ticketFlow } from "./ticketSaga";
+import { selectors, startTicketAbort } from "./ticketSlice";
 
 const holdAction = {
   type: "test",
@@ -66,5 +29,29 @@ describe("Common to all flows", () => {
       )
       .call(reserveTicketServerCall, holdReservation)
       .run();
+  });
+  test("show error toast and clean up after server error", () => {
+    return (
+      expectSaga(ticketFlow, holdAction)
+        .provide([
+          [
+            matchers.call.fn(reserveTicketServerCall),
+            throwError(new Error("it did not work")),
+          ],
+          // write matcher for selector
+          [
+            matchers.select.selector(selectors.getTicketAction),
+            TicketAction.hold,
+          ],
+          [matchers.call.fn(releaseServerCall), null],
+        ])
+        // assert on startToast action
+        .put(
+          showToast(
+            generateErrorToastOptions("it did not work", TicketAction.hold)
+          )
+        )
+        .run()
+    );
   });
 });
