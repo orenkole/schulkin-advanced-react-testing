@@ -1,21 +1,31 @@
 import { expectSaga } from "redux-saga-test-plan";
 import * as matchers from "redux-saga-test-plan/matchers";
-import { throwError } from "redux-saga-test-plan/providers";
+import {StaticProvider, throwError} from "redux-saga-test-plan/providers";
 
 import { holdReservation } from "../../../test-utils/fake-data";
 import { showToast } from "../../toast/redux/toastSlice";
 import { releaseServerCall, reserveTicketServerCall } from "../api";
 import { TicketAction } from "../types";
-import {cancelTransaction, generateErrorToastOptions, ticketFlow} from "./ticketSaga";
-import {resetTransaction, selectors, startTicketAbort} from "./ticketSlice";
+import {
+  cancelTransaction,
+  generateErrorToastOptions,
+  ticketFlow,
+} from "./ticketSaga";
+import { resetTransaction, selectors, startTicketAbort} from "./ticketSlice";
 
 const holdAction = {
   type: "test",
   payload: holdReservation,
 };
 
+const networkProviders: Array<StaticProvider> = [
+  [matchers.call.fn(reserveTicketServerCall), null],
+  [matchers.call.fn(releaseServerCall), null],
+];
+
 test("cancelTransaction cancels the hold and resets transaction ", () => {
   return expectSaga(cancelTransaction, holdReservation)
+    .provide(networkProviders)
     .call(releaseServerCall, holdReservation)
     .put(resetTransaction())
     .run();
@@ -24,10 +34,7 @@ test("cancelTransaction cancels the hold and resets transaction ", () => {
 describe("Common to all flows", () => {
   test("starts with hold call to server", () => {
     return expectSaga(ticketFlow, holdAction)
-      .provide([
-        [matchers.call.fn(reserveTicketServerCall), null],
-        [matchers.call.fn(releaseServerCall), null],
-      ])
+      .provide(networkProviders)
       .dispatch(
         startTicketAbort({
           reservation: holdReservation,
@@ -50,7 +57,7 @@ describe("Common to all flows", () => {
             matchers.select.selector(selectors.getTicketAction),
             TicketAction.hold,
           ],
-          [matchers.call.fn(releaseServerCall), null],
+          ...networkProviders,
         ])
         // assert on startToast action
         .put(
