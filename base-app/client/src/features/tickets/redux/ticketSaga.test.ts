@@ -6,13 +6,20 @@ import { holdReservation } from "../../../test-utils/fake-data";
 import { showToast } from "../../toast/redux/toastSlice";
 import { releaseServerCall, reserveTicketServerCall } from "../api";
 import { TicketAction } from "../types";
-import { generateErrorToastOptions, ticketFlow } from "./ticketSaga";
-import { selectors, startTicketAbort } from "./ticketSlice";
+import {cancelTransaction, generateErrorToastOptions, ticketFlow} from "./ticketSaga";
+import {resetTransaction, selectors, startTicketAbort} from "./ticketSlice";
 
 const holdAction = {
   type: "test",
   payload: holdReservation,
 };
+
+test("cancelTransaction cancels the hold and resets transaction ", () => {
+  return expectSaga(cancelTransaction, holdReservation)
+    .call(releaseServerCall, holdReservation)
+    .put(resetTransaction())
+    .run();
+});
 
 describe("Common to all flows", () => {
   test("starts with hold call to server", () => {
@@ -51,6 +58,7 @@ describe("Common to all flows", () => {
             generateErrorToastOptions("it did not work", TicketAction.hold)
           )
         )
+        .call(cancelTransaction, holdReservation)
         .run()
     );
   });
